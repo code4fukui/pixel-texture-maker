@@ -1,0 +1,127 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+</head><body>
+<h1>pixel-texture-maker</h1>
+
+<canvas id=canvas></canvas><br>
+<div id=colors></div>
+<select id=mode></select><br>
+<input id=rng2 style="width:256px" type=range value=50 min=0 max=100><br>
+<input id=rng style="width:256px" type=range value=0 min=0 max=100><br>
+<button id=anim>animation</button><br>
+
+<div id=credit>
+Texture data created by this app can be used freely.<br>
+このアプリで生成したテクスチャーデータは自由に使えます。<br>
+App: <a href=https://github.com/code4fukui/texture-maker/>src on GitHub</a><br>
+</div>
+
+<script type="module">
+import { createNoise3D } from "https://cdn.skypack.dev/simplex-noise@4.0.0";
+import chroma from "https://code4fukui.github.io/chroma-es/chroma.min.js";
+
+const noise = createNoise3D();
+
+//const canvas = document.createElement("canvas");
+//document.body.appendChild(canvas);
+canvas.width = 256;
+canvas.height = 256;
+canvas.style.width = "256px";
+canvas.style.height = "256px";
+
+const g = canvas.getContext("2d");
+g.imageSmoothingEnabled = true;
+
+const COLORS = ["#5A3917", "#BB7E3C", "#858484"];
+//const colors = document.createElement("div");
+//document.body.appendChild(colors);
+colors.className = "colors";
+for (const color of COLORS) {
+  const inp = document.createElement("input");
+  inp.type = "color";
+  inp.value = color;
+  colors.appendChild(inp);
+  inp.onchange = () => show();
+}
+
+const modes = ["rgb", "lab", "lch", "hsv", "hsl", "hsi"];
+for (const m of modes) {
+  const opt = document.createElement("option");
+  opt.textContent = m;
+  mode.appendChild(opt);
+}
+mode.onchange = () => show();
+
+const nodes2ar = (list) => {
+  const res = new Array(list.length);
+  for (let i = 0; i < list.length; i++) {
+    res[i] = list[i];
+  }
+  return res;
+};
+const getColors = () => {
+  return nodes2ar(colors.childNodes).map(e => e.value);
+};
+
+let bkt = 0;
+const show = (t) => {
+  if (t == undefined) {
+    t = bkt;
+  }
+  const vmode = mode.value;
+  const p = Math.pow(20, (50 - rng2.value) / 100);
+  const cs = chroma.scale(getColors()).mode(vmode).out("hex");
+  const w = 256 / 16;
+  for (let i = 0; i < 16; i++) {
+    for (let j = 0; j < 16; j++) {
+      const n = noise(i, j, t) / 2 + .5;
+      g.fillStyle = cs(Math.pow(n, p));
+      g.fillRect(i * w, j * w, w, w);
+    }
+  }
+  bkt = t;
+};
+
+let animflg = false;
+let t = 0;
+anim.onclick = () => {
+  if (animflg) {
+    animflg = false;
+    return;
+  }
+  animflg = true;
+  const f = () => {
+    if (animflg) {
+      requestAnimationFrame(f);
+    }
+    show(t);
+    t += 0.01;
+  };
+  f();
+};
+anim.onclick(); // auto animation start
+
+rng.oninput = () => {
+  animflg = false;
+  show(rng.value / 100);
+};
+rng2.oninput = () => show();
+show(0);
+
+</script>
+
+<style>
+body {
+  text-align: center;
+  background-image: url(bg.png);
+}
+canvas {
+  margin-top: .5em;
+}
+#credit {
+  margin-top: 1em;
+}
+a {
+  color: gray !important;
+}
+</style>
+</body></html>
